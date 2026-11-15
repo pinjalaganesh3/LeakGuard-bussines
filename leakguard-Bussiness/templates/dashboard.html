@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeakGuard | Security Monitoring & Incident Management</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar" id="sidebar">
+        <div class="brand">
+            <div class="brand-icon">LG</div>
+            <div class="brand-text">LeakGuard</div>
+            <div class="brand-subtitle">SECURITY MONITOR</div>
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item active" onclick="navigateTo('dashboard')">
+                <span class="nav-icon">🛡️</span>
+                <span class="nav-label">Dashboard</span>
+            </li>
+            <li class="nav-item" onclick="navigateTo('simulator')">
+                <span class="nav-icon">🖥️</span>
+                <span class="nav-label">Event Simulator</span>
+            </li>
+            <li class="nav-item" onclick="navigateTo('incidents')">
+                <span class="nav-icon">🚨</span>
+                <span class="nav-label">Incidents</span>
+            </li>
+        </ul>
+        <div class="nav-footer">
+            <div class="nav-version">v1.0.0 · Academic Prototype</div>
+            <div class="nav-status">
+                <span class="status-dot online"></span>
+                System Online
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header class="top-header">
+            <h1 class="page-title" id="page-title">Dashboard</h1>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="refreshData()">Refresh</button>
+                <button class="btn btn-primary" onclick="runDetection()">Run Detection Engine</button>
+                <button class="btn btn-danger" onclick="resetDemo()">Reset Demo</button>
+            </div>
+        </header>
+
+        <!-- Dashboard Section -->
+        <section id="section-dashboard" class="content-section active">
+            <!-- Stat Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Security Events</div>
+                    <div class="stat-value" id="stat-total-events">0</div>
+                    <div class="stat-trend">▲ 0 new today</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Incidents</div>
+                    <div class="stat-value" id="stat-total-incidents">0</div>
+                    <div class="stat-trend">All severity levels</div>
+                </div>
+                <div class="stat-card stat-card--alert">
+                    <div class="stat-label">Open Incidents</div>
+                    <div class="stat-value" id="stat-open-incidents">0</div>
+                    <div class="stat-trend">Requires attention</div>
+                </div>
+                <div class="stat-card stat-card--investigating">
+                    <div class="stat-label">Investigating</div>
+                    <div class="stat-value" id="stat-investigating-incidents">0</div>
+                    <div class="stat-trend">Under review</div>
+                </div>
+                <div class="stat-card stat-card--closed">
+                    <div class="stat-label">Closed Incidents</div>
+                    <div class="stat-value" id="stat-closed-incidents">0</div>
+                    <div class="stat-trend">Resolved</div>
+                </div>
+                <div class="stat-card stat-card--high">
+                    <div class="stat-label">High Severity</div>
+                    <div class="stat-value" id="stat-high-severity">0</div>
+                    <div class="stat-trend">Critical priority</div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="charts-row">
+                <div class="chart-card">
+                    <canvas id="severityChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Recent Activity & Incidents -->
+            <div class="dashboard-grid">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>Recent Security Activity</h2>
+                        <span class="badge badge-info">Live Feed</span>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table" id="events-table">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>User</th>
+                                    <th>Event Type</th>
+                                    <th>Source IP</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="events-table-body">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>Active Incidents</h2>
+                        <a href="#" onclick="navigateTo('incidents')" class="view-all">View All →</a>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table" id="incidents-table">
+                            <thead>
+                                <tr>
+                                    <th>Incident ID</th>
+                                    <th>Title</th>
+                                    <th>Severity</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="incidents-table-body">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Simulator Section -->
+        <section id="section-simulator" class="content-section">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Security Event Simulator</h2>
+                    <p class="panel-desc">Simulate login attempts for demonstration purposes. No real accounts are affected.</p>
+                </div>
+                <div class="simulator-controls">
+                    <div class="form-group">
+                        <label class="form-label">Username</label>
+                        <input type="text" id="sim-username" value="demo_user" placeholder="Enter username">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Login Result</label>
+                        <select id="sim-result" class="form-select">
+                            <option value="failed">Failed Login</option>
+                            <option value="success">Successful Login</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-danger btn-large" onclick="simulateLogin()">Simulate Login Attempt</button>
+                    <button class="btn btn-primary btn-large" onclick="runDemoSimulation()" style="margin-top:0.75rem;">🎓 Run Faculty Demo (5 Failed Logins → Auto Incident)</button>
+                </div>
+
+                <div class="simulator-hint">
+                    <p><strong>Demo Scenario:</strong> Enter <code>demo_user</code>, select <strong>Failed Login</strong>, and click the button 5 times rapidly. The detection engine will automatically generate a <strong>High severity</strong> incident once 5 failed attempts occur within 60 seconds.</p>
+                </div>
+
+                <div id="sim-result-output" class="sim-output"></div>
+            </div>
+        </section>
+
+        <!-- Incidents Section -->
+        <section id="section-incidents" class="content-section">
+            <div class="panel panel-full">
+                <div class="panel-header">
+                    <h2>Incident Management</h2>
+                    <div class="status-filters">
+                        <button class="filter-chip active" onclick="filterIncidents('all')">All</button>
+                        <button class="filter-chip" onclick="filterIncidents('Open')">Open</button>
+                        <button class="filter-chip" onclick="filterIncidents('Investigating')">Investigating</button>
+                        <button class="filter-chip" onclick="filterIncidents('Closed')">Closed</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="data-table" id="incidents-detail-table">
+                        <thead>
+                            <tr>
+                                <th>Incident ID</th>
+                                <th>Title</th>
+                                <th>User</th>
+                                <th>Severity</th>
+                                <th>Status</th>
+                                <th>Events</th>
+                                <th>Detected</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="incidents-detail-body">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Incident Detail Modal -->
+            <div id="incident-modal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 id="modal-title">Incident Details</h3>
+                        <button class="close-btn" onclick="closeIncidentModal()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <label>Incident ID</label>
+                                <span id="detail-incident-id">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Title</label>
+                                <span id="detail-title">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Username</label>
+                                <span id="detail-username">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Severity</label>
+                                <span id="detail-severity" class="severity-badge severity-high">High</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Status</label>
+                                <span id="detail-status" class="status-badge status-open">Open</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Event Count</label>
+                                <span id="detail-event-count">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Detected At</label>
+                                <span id="detail-detection-time">-</span>
+                            </div>
+                            <div class="detail-item full-width">
+                                <label>Evidence</label>
+                                <div class="evidence-text" id="detail-evidence">-</div>
+                            </div>
+                        </div>
+
+                        <div class="status-history">
+                            <h4>Status History</h4>
+                            <table class="data-table" id="history-table">
+                                <thead>
+                                    <tr><th>Old Status</th><th>New Status</th><th>Changed At</th><th>Changed By</th></tr>
+                                </thead>
+                                <tbody id="history-table-body"></tbody>
+                            </table>
+                        </div>
+
+                        <div class="modal-actions">
+                            <label class="form-label">Update Status</label>
+                            <select id="modal-new-status" class="form-select">
+                                <option value="Open">Open</option>
+                                <option value="Investigating">Investigating</option>
+                                <option value="Closed">Closed</option>
+                            </select>
+                            <button class="btn btn-primary" onclick="updateIncidentStatus()">Save Status</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
